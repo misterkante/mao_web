@@ -1,102 +1,102 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
+# # Logs
+# logs
+# *.log
+# npm-debug.log*
+# yarn-debug.log*
+# yarn-error.log*
+# pnpm-debug.log*
 
-# Diagnostic reports (https://nodejs.org/api/report.html)
-.report/
+# # Diagnostic reports (https://nodejs.org/api/report.html)
+# .report/
 
-# Runtime data
-.npm
-.eslintcache
-.next/
-.nuxt/
-.vercel/
-.vite/
-.vuepress/
-.cache/
-.session/
-.tmp/
-.temp/
-.docusaurus/
+# # Runtime data
+# .npm
+# .eslintcache
+# .next/
+# .nuxt/
+# .vercel/
+# .vite/
+# .vuepress/
+# .cache/
+# .session/
+# .tmp/
+# .temp/
+# .docusaurus/
 
-# Directory for compiled output
-dist
-build
-out
+# # Directory for compiled output
+# dist
+# build
+# out
 
-# Dependencies
-node_modules/
-/jspm_packages/
+# # Dependencies
+# node_modules/
+# /jspm_packages/
 
-# Editors
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
+# # Editors
+# .vscode/
+# .idea/
+# *.sublime-project
+# *.sublime-workspace
 
-# Environment variables
-.env
-.env.local
-.env.*.local
-.env.development.local
-.env.test.local
-.env.production.local
+# # Environment variables
+# .env
+# .env.local
+# .env.*.local
+# .env.development.local
+# .env.test.local
+# .env.production.local
 
-# Local Machine-Specific
-.DS_Store
-Thumbs.db
-.tool-versions
-.direnv/
+# # Local Machine-Specific
+# .DS_Store
+# Thumbs.db
+# .tool-versions
+# .direnv/
 
-# Yarn
-.yarn/*
-!.yarn/patches
-!.yarn/releases
-!.yarn/plugins
-!.yarn/sdks
-!.yarn/versions
-.pnp.*
+# # Yarn
+# .yarn/*
+# !.yarn/patches
+# !.yarn/releases
+# !.yarn/plugins
+# !.yarn/sdks
+# !.yarn/versions
+# .pnp.*
 
-# pnpm
-.pnpm-store/
+# # pnpm
+# .pnpm-store/
 
-# Misc
-*.pid
-*.seed
-*.pid.lock
-*.swo
-*.swp
-*.zip
-*.rar
-*.7z
-*.tar
-*.gz
-*.bz2
-*.rar
-*.tgz
-*.woff
-*.woff2
-*.eot
-*.ttf
-*.otf
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.webp
-*.svg
-*.ico
-*.pdf
-*.md
+# # Misc
+# *.pid
+# *.seed
+# *.pid.lock
+# *.swo
+# *.swp
+# *.zip
+# *.rar
+# *.7z
+# *.tar
+# *.gz
+# *.bz2
+# *.rar
+# *.tgz
+# *.woff
+# *.woff2
+# *.eot
+# *.ttf
+# *.otf
+# *.png
+# *.jpg
+# *.jpeg
+# *.gif
+# *.webp
+# *.svg
+# *.ico
+# *.pdf
+# *.md
 
-# IDE specific files for webstorm
-.idea
-.fleet
+# # IDE specific files for webstorm
+# .idea
+# .fleet
 
-# temp
-/tmp
+# # temp
+# /tmp
 /temp
