@@ -16,8 +16,11 @@
     "@yudiel/react-qr-scanner": "^2.4.1",
     "crypto-js": "^4.2.0",
     "html5-qrcode": "^2.3.8",
+    "lucide-react": "^0.556.0",
+    "qrcode-with-logos": "^1.1.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-qrcode-logo": "^4.0.0",
     "react-router-dom": "^7.10.0",
     "tailwindcss": "^4.1.17"
   },

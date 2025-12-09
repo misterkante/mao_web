@@ -9,30 +9,45 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Récupérer la session initiale
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
 
-    // Écouter les changements d'authentification
+    // Attribuer un role aux utilisateurs inscrits via Google Oauth
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+
+      try {
+        const user = session?.user;
+        if (user && (!user.user_metadata || !user.user_metadata.role)) {
+          await supabase.auth.updateUser({ data: { role: 'user', ...(user.user_metadata || {}) } });
+          const refreshed = await supabase.auth.getSession();
+          setSession(refreshed.data.session);
+          setUser(refreshed.data.session?.user ?? null);
+        }
+      } catch (err) {
+        console.error('Erreur lors de la mise à jour du role par défaut (onAuthStateChange):', err);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  // Fonction pour vérifier si l'utilisateur est admin
+  const isAdmin = () => {
+    if (!user) return false;
+    // Vérifier dans user_metadata ou app_metadata
+    const role = user.user_metadata?.role || user.app_metadata?.role;
+    return role === 'admin' || role === 'dev';
+  };
 
   const value = {
     user,
     session,
     loading,
     signOut: () => signOut(),
+    isAdmin: isAdmin(),
   };
 
   return (

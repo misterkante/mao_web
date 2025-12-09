@@ -2,9 +2,9 @@
 import { createClient } from '@supabase/supabase-js'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-console.log(supabaseUrl)
+// console.log(supabaseUrl)
 const supabaseKey = import.meta.env.VITE_SUPABASE_KEY
-console.log(supabaseKey)
+// console.log(supabaseKey)
 
 export const supabase = createClient(supabaseUrl, supabaseKey)
 
@@ -43,15 +43,23 @@ export const signIn = async (email, password) => supabase.auth.signInWithPasswor
 /**
  * S'enregistrer
  */
-export const signUp = async (email, password, optionalData) => supabase.auth.signUp(
-  {
-    email: email,
-    password: password,
-    options: {
-      data: optionalData
+export const signUp = async (email, password, optionalData) => {
+  
+  const data = {
+    role: 'user', // role utilisateur
+    ...(optionalData || {}),
+  };
+
+  return supabase.auth.signUp(
+    {
+      email: email,
+      password: password,
+      options: {
+        data,
+      },
     }
-  }
-)
+  );
+}
 
 
 /**
