@@ -1,7 +1,6 @@
 import { supabase } from './supabase';
 
-const API_BASE_URL =
- import.meta.env.VITE_API_URL || 'https://mao-back.onrender.com/api';
+const API_BASE_URL ='https://mao-back.onrender.com/api';
 
   console.log(API_BASE_URL)
 export const getAccessToken = async () => {
