@@ -82,7 +82,7 @@ export default function QRGeneratorPage() {
         body: { name: trimmedName, qr_code: tempQr },
       });
 
-      const appUrl = import.meta.env.VITE_APP_URL || '';
+      const appUrl = 'https://maoweb.vercel.app/';
       const qrContent = `${appUrl.replace(/\/$/, '')}/chat/${inserted.id}`;
 
       setCreatedArtwork(inserted);
