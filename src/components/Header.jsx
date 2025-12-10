@@ -29,7 +29,13 @@ export default function AppHeader() {
       <div className="max-w-7xl mx-auto px-4">
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo avec image */}
-         KLOP
+          <a href="/" className="flex items-center cursor-pointer">
+            <img 
+              src="../src/assets/logo-Mao.PNG" 
+              alt="MAO Logo" 
+              className="h-10 lg:h-14 w-auto object-contain"
+            />
+          </a>
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-8">
