@@ -49,7 +49,7 @@ const ChatHeader = ({ onBack, artwork }) => {
 
           {/* Bouton Activer */}
           <button
-            className="px-4 py-2 text-blue-600 bg-gray-100 rounded-lg flex items-center space-x-2 shadow-lg hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 text-orange-600 bg-gray-100 rounded-lg flex items-center space-x-2 shadow-lg hover:bg-gray-50 transition-colors"
             aria-label="Activer"
           >
             <span className="font-medium text-sm">Activer</span>

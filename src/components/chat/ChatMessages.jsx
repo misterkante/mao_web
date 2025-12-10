@@ -2,7 +2,13 @@ import React, { useRef, useEffect } from 'react';
 import MessageBubble from './MessageBubble';
 import InvitationBlock from './InvitationBlock';
 
-const ChatMessages = ({ artwork, messages, setMessages, isAuthenticated }) => {
+const ChatMessages = ({
+  artwork,
+  messages,
+  setMessages,
+  isAuthenticated,
+  introAudioControls,
+}) => {
   const messagesEndRef = useRef(null);
   
   // Mettre à jour le message initial quand l'artwork change
@@ -44,9 +50,13 @@ const ChatMessages = ({ artwork, messages, setMessages, isAuthenticated }) => {
           
           return (
             <React.Fragment key={message.id}>
-              <MessageBubble message={message} artwork={artwork} />
+              <MessageBubble
+                message={message}
+                artwork={artwork}
+                introAudioControls={message.id === "intro-audio" ? introAudioControls : undefined}
+              />
               
-              {/* Afficher le bloc de suggestion juste après le premier message du bot, avant toute réponse utilisateur */}
+              {/* Afficher le bloc de suggestion juste après le premier message du bot, avant toute réponse utilisateur 
               {isFirstBotMessage && !hasUserMessages && (
                 <div className="flex justify-center my-4">
                   <div className="border-2 border-orange-500 rounded-xl px-4 py-3 bg-white">
@@ -55,7 +65,7 @@ const ChatMessages = ({ artwork, messages, setMessages, isAuthenticated }) => {
                     </p>
                   </div>
                 </div>
-              )}
+              )}*/}
               
               {/* Afficher le bloc d'invitation après le 2ème message utilisateur si non connecté */}
               {isSecondUserMessage && shouldShowInvitation && (

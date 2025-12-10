@@ -17,6 +17,7 @@ import SubscriptionPage from "./pages/SubscriptionPage.jsx";
 import ChatbotContainer from "./components/chat/ChatbotContainer.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import NotFound from "./pages/NotFound.jsx";
+import ArtworkEditPage from "./pages/ArtworkEditPage.jsx";
 
 const router = createBrowserRouter([
   {
@@ -53,6 +54,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedAdminRoute>
         <AdminDashboard />
+      </ProtectedAdminRoute>
+    ),
+  },
+  {
+    path: "/artworks/:id/edit",
+    element: (
+      <ProtectedAdminRoute>
+        <ArtworkEditPage />
       </ProtectedAdminRoute>
     ),
   },

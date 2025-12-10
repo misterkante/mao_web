@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import QrCode from '../components/QRcode';
 import { supabase } from '../services/supabase';
 import { apiRequest } from '../services/api';
@@ -10,32 +10,12 @@ const bucketName = import.meta.env.VITE_QR_BUCKET || 'qr-codes';
 
 export default function QRGeneratorPage() {
   const { session } = useAuth();
-  const [searchParams] = useSearchParams();
-  const editId = searchParams.get('editId');
-  const isEditMode = !!editId;
   const [form, setForm] = useState(initialForm);
   const [options, setOptions] = useState(null);
   const [qrValue, setQrValue] = useState('');
   const [createdArtwork, setCreatedArtwork] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [loadingExisting, setLoadingExisting] = useState(false);
-
-  const appUrl = useMemo(() => (import.meta.env.VITE_APP_URL || '').replace(/\/$/, ''), []);
-
-  const defaultOptions = useMemo(() => ({
-    ecLevel: 'M',
-    enableCORS: false,
-    size: 300,
-    quietZone: 10,
-    bgColor: '#FFFFFF',
-    fgColor: '#000000',
-    logoImage: '',
-    logoWidth: 40,
-    logoHeight: 40,
-    qrStyle: 'squares',
-    logoOpacity: '1,320'
-  }), []);
 
   const resetState = () => {
     setForm(initialForm);
@@ -60,7 +40,7 @@ export default function QRGeneratorPage() {
   const handleCancel = async () => {
     setError('');
     try {
-      if (!isEditMode && createdArtwork?.id) {
+      if (createdArtwork?.id) {
         await deleteArtwork(createdArtwork.id, session?.access_token);
       }
       resetState();
@@ -91,56 +71,60 @@ export default function QRGeneratorPage() {
 
     setLoading(true);
     try {
-      if (isEditMode) {
-        const updated = await apiRequest(`/artworks/${editId}`, {
-          method: 'PATCH',
-          token: accessToken,
-          body: { name: trimmedName },
-        });
-        setCreatedArtwork(updated);
-      } else {
-        if (createdArtwork?.id) {
-          await deleteArtwork(createdArtwork.id, accessToken);
-        }
-
-        const tempQr = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        const inserted = await apiRequest('/artworks', {
-          method: 'POST',
-          token: accessToken,
-          body: { name: trimmedName, qr_code: tempQr },
-        });
-
-        const qrContent = `${appUrl}/chat/${inserted.id}`;
-
-        setCreatedArtwork(inserted);
-        setQrValue(qrContent);
-        setOptions(defaultOptions);
-
-        const canvas = await waitForCanvas();
-        const blob = await new Promise((resolve, reject) =>
-          canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Échec de la génération de l’image'))), 'image/png'),
-        );
-
-        const path = getQrPath(inserted.id);
-        const { error: uploadError } = await supabase.storage
-          .from(bucketName)
-          .upload(path, blob, { upsert: true, contentType: 'image/png' });
-
-        if (uploadError) {
-          throw uploadError;
-        }
-
-        const { data: publicData } = supabase.storage.from(bucketName).getPublicUrl(path);
-        const publicUrl = publicData?.publicUrl;
-
-        const updated = await apiRequest(`/artworks/${inserted.id}`, {
-          method: 'PATCH',
-          token: accessToken,
-          body: { qr_code: publicUrl || '' },
-        });
-
-        setCreatedArtwork(updated);
+      if (createdArtwork?.id) {
+        await deleteArtwork(createdArtwork.id, accessToken);
       }
+
+      const tempQr = `temp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const inserted = await apiRequest('/artworks', {
+        method: 'POST',
+        token: accessToken,
+        body: { name: trimmedName, qr_code: tempQr },
+      });
+
+      const appUrl = import.meta.env.VITE_APP_URL || '';
+      const qrContent = `${appUrl.replace(/\/$/, '')}/chat/${inserted.id}`;
+
+      setCreatedArtwork(inserted);
+      setQrValue(qrContent);
+      setOptions({
+        ecLevel: 'M',
+        enableCORS: false,
+        size: 300,
+        quietZone: 10,
+        bgColor: '#FFFFFF',
+        fgColor: '#000000',
+        logoImage: '',
+        logoWidth: 40,
+        logoHeight: 40,
+        qrStyle: 'squares',
+        logoOpacity: '1,320'
+      });
+
+      const canvas = await waitForCanvas();
+      const blob = await new Promise((resolve, reject) =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Échec de la génération de l’image'))), 'image/png'),
+      );
+
+      const path = getQrPath(inserted.id);
+      const { error: uploadError } = await supabase.storage
+        .from(bucketName)
+        .upload(path, blob, { upsert: true, contentType: 'image/png' });
+
+      if (uploadError) {
+        throw uploadError;
+      }
+
+      const { data: publicData } = supabase.storage.from(bucketName).getPublicUrl(path);
+      const publicUrl = publicData?.publicUrl;
+
+      const updated = await apiRequest(`/artworks/${inserted.id}`, {
+        method: 'PATCH',
+        token: accessToken,
+        body: { qr_code: publicUrl || '' },
+      });
+
+      setCreatedArtwork(updated);
     } catch (err) {
       setError(err.message ?? 'Une erreur est survenue lors de la création du QR code.');
     } finally {
@@ -173,28 +157,6 @@ export default function QRGeneratorPage() {
     }
   };
 
-  useEffect(() => {
-    if (!isEditMode) return;
-    const loadArtwork = async () => {
-      setLoadingExisting(true);
-      setError('');
-      try {
-        const accessToken = session?.access_token;
-        if (!accessToken) throw new Error('Authentification requise pour modifier une œuvre.');
-        const artwork = await apiRequest(`/artworks/${editId}`, { method: 'GET', token: accessToken });
-        setCreatedArtwork(artwork);
-        setForm({ name: artwork.name || '' });
-        setQrValue(`${appUrl}/chat/${artwork.id}`);
-        setOptions(defaultOptions);
-      } catch (err) {
-        setError(err.message ?? 'Impossible de charger cette œuvre.');
-      } finally {
-        setLoadingExisting(false);
-      }
-    };
-    loadArtwork();
-  }, [isEditMode, editId, appUrl, defaultOptions, session]);
-
   return (
     <div className="min-h-screen  py-8 px-4">
       <div className="max-w-3xl mx-auto">
@@ -213,9 +175,7 @@ Générer QR Code
         <div className="bg-white rounded-lg shadow-xl p-6">
 
           <p className="text-gray-600 text-center mb-6">
-            {isEditMode
-              ? "Met à jour les informations de l'œuvre scannée."
-              : "Saisissez le nom de l'oeuvre. Ce nom pourra être modifié plus tard."}
+            Saisissez le nom de l'oeuvre. <br /><i>Ce nom pourra être modifié plus tard.</i>
           </p>
           <form className="space-y-4" onSubmit={handleGenerate}>
             <div>
@@ -232,13 +192,13 @@ Générer QR Code
               />
             </div>
 
-            {(error || loadingExisting) && (
+            {error && (
               <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-sm text-red-700">
-                {loadingExisting ? 'Chargement en cours...' : error}
+                {error}
               </div>
             )}
 
-            {!qrValue && !loadingExisting && (
+            {!qrValue && (
               <div className="flex justify-between flex-wrap gap-3">
                 <button
                   type="submit"

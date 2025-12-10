@@ -8,11 +8,31 @@ export default function QRCodeScanner() {
   const [scannedData, setScannedData] = useState(null);
   const [isScanning, setIsScanning] = useState(true);
   const [error, setError] = useState(null);
+  const [isLoadingFile, setIsLoadingFile] = useState(false);
   const scannerRef = useRef(null);
   const html5QrCodeRef = useRef(null);
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
   const appUrl = (import.meta.env.VITE_APP_URL || "").replace(/\/$/, "");
+
+  const ensureQrElement = () => {
+    const element = document.getElementById("qr-reader");
+    if (!element) {
+      throw new Error("L'élément qr-reader n'a pas été trouvé dans le DOM");
+    }
+    return element;
+  };
+
+  const stopScanner = async () => {
+    if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
+      try {
+        await html5QrCodeRef.current.stop();
+        html5QrCodeRef.current.clear();
+      } catch (err) {
+        console.error("Erreur lors de l'arrêt du scanner:", err);
+      }
+    }
+  };
 
   const extractArtworkId = useCallback((value) => {
     try {
@@ -33,16 +53,22 @@ export default function QRCodeScanner() {
     return null;
   }, [appUrl]);
 
-  const stopScanner = async () => {
-    if (html5QrCodeRef.current && html5QrCodeRef.current.isScanning) {
-      try {
-        await html5QrCodeRef.current.stop();
-        html5QrCodeRef.current.clear();
-      } catch (err) {
-        console.error("Erreur lors de l'arrêt du scanner:", err);
+  const handleDecodedResult = useCallback(
+    async (decodedText) => {
+      setScannedData(decodedText);
+      setIsScanning(false);
+      await stopScanner();
+
+      // Si admin et QR MAO → rediriger vers la page d'édition de l'œuvre
+      if (isAdmin && user) {
+        const artworkId = extractArtworkId(decodedText);
+        if (artworkId) {
+          navigate(`/artworks/${artworkId}/edit`);
+        }
       }
-    }
-  };
+    },
+    [extractArtworkId, isAdmin, navigate, user]
+  );
 
   useEffect(() => {
     return () => {
@@ -59,12 +85,7 @@ export default function QRCodeScanner() {
           // Attendre que l'élément soit dans le DOM
           await new Promise((resolve) => setTimeout(resolve, 50));
 
-          const element = document.getElementById("qr-reader");
-          if (!element) {
-            throw new Error(
-              "L'élément qr-reader n'a pas été trouvé dans le DOM"
-            );
-          }
+          ensureQrElement();
 
           // Créer une instance de Html5Qrcode si elle n'existe pas déjà
           if (!html5QrCodeRef.current) {
@@ -72,6 +93,10 @@ export default function QRCodeScanner() {
           }
 
           const html5QrCode = html5QrCodeRef.current;
+
+          if (html5QrCode.isScanning) {
+            return; // éviter un double démarrage
+          }
 
           // Configuration du scanner
           const config = {
@@ -83,18 +108,7 @@ export default function QRCodeScanner() {
           // Callback de succès
           const qrCodeSuccessCallback = async (decodedText) => {
             console.log("QR Code détecté:", decodedText);
-            setScannedData(decodedText);
-            setIsScanning(false);
-            await stopScanner();
-
-            // Si admin et QR MAO → rediriger vers la page d'édition de l'œuvre
-            if (isAdmin && user) {
-              const artworkId = extractArtworkId(decodedText);
-              if (artworkId) {
-                navigate(`/generator?editId=${artworkId}`);
-                return;
-              }
-            }
+            await handleDecodedResult(decodedText);
           };
 
           const qrCodeErrorCallback = () => {
@@ -141,7 +155,7 @@ export default function QRCodeScanner() {
 
       initScanner();
     }
-  }, [isScanning, scannedData, extractArtworkId, isAdmin, navigate, user]);
+  }, [handleDecodedResult, isScanning, scannedData]);
 
   const startScanner = () => {
     setError(null);
@@ -152,6 +166,41 @@ export default function QRCodeScanner() {
     setScannedData(null);
     setError(null);
     setIsScanning(true);
+  };
+
+  const handleFileUpload = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsLoadingFile(true);
+    setError(null);
+
+    try {
+      await stopScanner();
+
+      ensureQrElement();
+
+      if (!html5QrCodeRef.current) {
+        html5QrCodeRef.current = new Html5Qrcode("qr-reader");
+      }
+
+      const result = await html5QrCodeRef.current.scanFile(file, true);
+      const decodedText = typeof result === "string" ? result : result?.text;
+
+      if (decodedText) {
+        await handleDecodedResult(decodedText);
+      } else {
+        throw new Error("Aucun QR code détecté");
+      }
+    } catch (err) {
+      console.error("Erreur lors de la lecture du fichier:", err);
+      setError(
+        "Impossible de lire ce fichier. Assurez-vous que l'image contient un QR code net."
+      );
+    } finally {
+      setIsLoadingFile(false);
+      event.target.value = "";
+    }
   };
 
   // const copyToClipboard = async () => {
@@ -171,10 +220,21 @@ export default function QRCodeScanner() {
             to="/"
             className="flex items-center gap-20 text-orange-600 hover:text-orange-700 font-medium"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-</svg>
-Scanner QR Code
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="1.5"
+              stroke="currentColor"
+              className="size-6"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15.75 19.5 8.25 12l7.5-7.5"
+              />
+            </svg>
+            Scanner QR Code
           </Link>
         </div>
 
@@ -194,20 +254,20 @@ Scanner QR Code
                   onClick={startScanner}
                   className="w-min py-2 px-3 text-red-700 hover:text-red-600 font-semibold rounded"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke-width="1.5"
-                    stroke="currentColor"
-                    class="size-6 hover:cursor-pointer"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
-                    />
-                  </svg>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.5"
+                  stroke="currentColor"
+                  className="size-6 hover:cursor-pointer"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99"
+                  />
+                </svg>
                 </button>
               </div>
             </div>
@@ -246,46 +306,92 @@ Scanner QR Code
             </div>
           )}
 
-          {isScanning && !scannedData && (
+          <div className="mb-6 p-6 bg-orange-50 border border-dashed border-orange-300 rounded-lg">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div>
+                <p className="text-orange-900 font-semibold">
+                  Importer une image de QR code
+                </p>
+                <p className="text-sm text-gray-700">
+                  Sélectionnez une image depuis votre appareil pour la scanner,
+                  pratique sur ordinateur ou si la caméra n'est pas disponible.
+                </p>
+              </div>
+              <label
+                htmlFor="qr-upload"
+                className="inline-flex items-center gap-2 py-2 px-4 bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-lg cursor-pointer transition shadow-md hover:shadow-lg"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                  className="size-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 9 12 4.5 7.5 9M12 4.5V15"
+                  />
+                </svg>
+                {isLoadingFile ? "Analyse..." : "Choisir une image"}
+              </label>
+              <input
+                id="qr-upload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleFileUpload}
+                disabled={isLoadingFile}
+              />
+            </div>
+          </div>
+
           <div className="mb-6">
             <div
               id="qr-reader"
               ref={scannerRef}
-              className="w-full max-w-md mx-auto rounded-xl overflow-hidden border-4 border-orange-500 shadow-lg"
+              className={`w-full max-w-md mx-auto rounded-xl overflow-hidden border-4 border-orange-500 shadow-lg ${
+                isScanning ? "" : "hidden"
+              }`}
             ></div>
-            <p className="text-center text-gray-600 mt-4 text-md">
-              Positionnez le QR code devant la caméra
-            </p>
-            <button
-              onClick={async () => {
-                await stopScanner();
-                setIsScanning(false);
-              }}
-              className="flex items-center gap-3 mx-auto mt-4 py-2 px-4 bg-red-500 hover:bg-red-400 text-white font-semibold rounded-lg transition"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="size-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 9.563C9 9.252 9.252 9 9.563 9h4.874c.311 0 .563.252.563.563v4.874c0 .311-.252.563-.563.563H9.564A.562.562 0 0 1 9 14.437V9.564Z"
-                />
-              </svg>
-              Arrêter le scanner
-            </button>
+            {isScanning && !scannedData && (
+              <>
+                <p className="text-center text-gray-600 mt-4 text-md">
+                  Positionnez le QR code devant la caméra
+                </p>
+                <button
+                  onClick={async () => {
+                    await stopScanner();
+                    setIsScanning(false);
+                  }}
+                  className="flex items-center gap-3 mx-auto mt-4 py-2 px-4 bg-red-500 hover:bg-red-400 text-white font-semibold rounded-lg transition"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    strokeWidth={1.5}
+                    stroke="currentColor"
+                    className="size-6"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M9 9.563C9 9.252 9.252 9 9.563 9h4.874c.311 0 .563.252.563.563v4.874c0 .311-.252.563-.563.563H9.564A.562.562 0 0 1 9 14.437V9.564Z"
+                    />
+                  </svg>
+                  Arrêter le scanner
+                </button>
+              </>
+            )}
           </div>
-         )} 
 
           {scannedData && (
             <div className="space-y-4">

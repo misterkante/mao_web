@@ -94,3 +94,34 @@ export const getAllArtworks = async () => {
     throw error;
   }
 };
+
+/**
+ * Met à jour un artwork
+ */
+export const updateArtwork = async (id, payload) => {
+  try {
+    const token = await getAuthToken();
+    if (!token) {
+      throw new Error('Authentification requise pour modifier une œuvre.');
+    }
+
+    const response = await fetch(`${API_BASE_URL}/artworks/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || 'Échec de la mise à jour de l’œuvre.');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour de l\'artwork:', error);
+    throw error;
+  }
+};
