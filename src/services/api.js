@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 
-const API_BASE_URL ='https://maoweb.vercel.app/api';
+const API_BASE_URL ='https://mao-back.onrender.com/api';
 
   console.log(API_BASE_URL)
 export const getAccessToken = async () => {
